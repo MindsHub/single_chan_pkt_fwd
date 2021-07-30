@@ -20,7 +20,8 @@
 typedef bool boolean;
 typedef unsigned char byte;
 
-static const int CHANNEL = 1;
+static const int SPI_CHANNEL = 1;
+static const int SPI_CLOCK_SPEED = 500000; // Hz, from 500,000 to 32,000,000
 
 byte currentMode = 0x81;
 
@@ -270,7 +271,7 @@ int main() {
     pinMode(RST, OUTPUT);
 
     //int fd = 
-    wiringPiSPISetup(CHANNEL, 500000);
+    wiringPiSPISetup(SPI_CHANNEL, SPI_CLOCK_SPEED);
     //cout << "Init result: " << fd << endl;
 
     if (!SetupLoRa()) {
