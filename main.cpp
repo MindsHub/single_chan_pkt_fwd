@@ -273,7 +273,7 @@ int main() {
         return 1;
     }
 
-    printf("Listening at SF%i on %.6lf Mhz.\n", sf,(double)freq/1000000);
+    printf("Listening at SF%i on %.6lf Mhz.\n", sf, freq / 1000000.0);
     printf("------------------\n");
 
     while(1) {
