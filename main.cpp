@@ -136,7 +136,7 @@ byte readRegister(byte addr) {
     spibuf[1] = 0x00;
 
     selectreceiver();
-    wiringPiSPIDataRW(CHANNEL, spibuf, 2);
+    wiringPiSPIDataRW(SPI_CHANNEL, spibuf, 2);
     unselectreceiver();
 
     return spibuf[1];
@@ -148,7 +148,7 @@ void writeRegister(byte addr, byte value) {
     spibuf[1] = value;
 
     selectreceiver();
-    wiringPiSPIDataRW(CHANNEL, spibuf, 2);
+    wiringPiSPIDataRW(SPI_CHANNEL, spibuf, 2);
     unselectreceiver();
 }
 
@@ -281,4 +281,3 @@ int main() {
         delay(1);
     }
 }
-
