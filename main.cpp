@@ -44,10 +44,6 @@ bool sx1272 = true;
 
 byte receivedbytes;
 
-struct sockaddr_in si_other;
-int s, slen=sizeof(si_other);
-struct ifreq ifr;
-
 uint32_t cp_nb_rx_rcv;
 uint32_t cp_nb_rx_ok;
 uint32_t cp_nb_rx_bad;
@@ -146,24 +142,15 @@ const uint32_t freq = 868000000; // in Mhz! (868.1)
 #define TX_BUFF_SIZE  2048
 #define STATUS_SIZE	  1024
 
-void die(const char *s)
-{
-    perror(s);
-    exit(1);
-}
-
-void selectreceiver()
-{
+void selectreceiver() {
     digitalWrite(ssPin, LOW);
 }
 
-void unselectreceiver()
-{
+void unselectreceiver() {
     digitalWrite(ssPin, HIGH);
 }
 
-byte readRegister(byte addr)
-{
+byte readRegister(byte addr) {
     unsigned char spibuf[2];
 
     selectreceiver();
@@ -175,8 +162,7 @@ byte readRegister(byte addr)
     return spibuf[1];
 }
 
-void writeRegister(byte addr, byte value)
-{
+void writeRegister(byte addr, byte value) {
     unsigned char spibuf[2];
 
     spibuf[0] = addr | 0x80;
@@ -188,9 +174,7 @@ void writeRegister(byte addr, byte value)
 }
 
 
-boolean receivePkt(char *payload)
-{
-
+boolean receivePkt(char *payload) {
     // clear rxDone
     writeRegister(REG_IRQ_FLAGS, 0x40);
 
@@ -199,13 +183,11 @@ boolean receivePkt(char *payload)
     cp_nb_rx_rcv++;
 
     //  payload crc: 0x20
-    if((irqflags & 0x20) == 0x20)
-    {
+    if((irqflags & 0x20) == 0x20) {
         printf("CRC error\n");
         writeRegister(REG_IRQ_FLAGS, 0x20);
         return false;
     } else {
-
         cp_nb_rx_ok++;
 
         byte currentAddr = readRegister(REG_FIFO_RX_CURRENT_ADDR);
@@ -214,17 +196,14 @@ boolean receivePkt(char *payload)
 
         writeRegister(REG_FIFO_ADDR_PTR, currentAddr);
 
-        for(int i = 0; i < receivedCount; i++)
-        {
+        for(int i = 0; i < receivedCount; i++) {
             payload[i] = (char)readRegister(REG_FIFO);
         }
     }
     return true;
 }
 
-void SetupLoRa()
-{
-    
+void SetupLoRa() {
     digitalWrite(RST, HIGH);
     delay(100);
     digitalWrite(RST, LOW);
@@ -320,19 +299,6 @@ int main() {
     //cout << "Init result: " << fd << endl;
 
     SetupLoRa();
-
-    ifr.ifr_addr.sa_family = AF_INET;
-    strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);  // can we rely on eth0?
-    ioctl(s, SIOCGIFHWADDR, &ifr);
-
-    /* display result */
-    printf("Gateway ID: %.2x:%.2x:%.2x:ff:ff:%.2x:%.2x:%.2x\n",
-           (unsigned char)ifr.ifr_hwaddr.sa_data[0],
-           (unsigned char)ifr.ifr_hwaddr.sa_data[1],
-           (unsigned char)ifr.ifr_hwaddr.sa_data[2],
-           (unsigned char)ifr.ifr_hwaddr.sa_data[3],
-           (unsigned char)ifr.ifr_hwaddr.sa_data[4],
-           (unsigned char)ifr.ifr_hwaddr.sa_data[5]);
 
     printf("Listening at SF%i on %.6lf Mhz.\n", sf,(double)freq/1000000);
     printf("------------------\n");
