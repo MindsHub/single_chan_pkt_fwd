@@ -9,23 +9,16 @@
  *
  *******************************************************************************/
 
-#include <string>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>
-#include <iostream>
-#include <cstdlib>
+#include <time.h>
 #include <sys/time.h>
-#include <cstring>
 
 #include <sys/ioctl.h>
 #include <net/if.h>
-
-using namespace std;
-
-#include "base64.h"
 
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
@@ -203,7 +196,7 @@ boolean receivePkt(char *payload) {
     return true;
 }
 
-void SetupLoRa() {
+bool SetupLoRa() {
     digitalWrite(RST, HIGH);
     delay(100);
     digitalWrite(RST, LOW);
@@ -229,7 +222,7 @@ void SetupLoRa() {
         } else {
             printf("Unrecognized transceiver.\n");
             //printf("Version: 0x%x\n",version);
-            exit(1);
+            return false;
         }
     }
 
@@ -274,6 +267,7 @@ void SetupLoRa() {
     writeRegister(REG_LNA, LNA_MAX_GAIN);  // max lna gain
     writeRegister(REG_OPMODE, SX72_MODE_RX_CONTINUOS);
 
+    return true;
 }
 
 void receivepacket() {
@@ -298,7 +292,9 @@ int main() {
     wiringPiSPISetup(CHANNEL, 500000);
     //cout << "Init result: " << fd << endl;
 
-    SetupLoRa();
+    if (!SetupLoRa()) {
+        return 1;
+    }
 
     printf("Listening at SF%i on %.6lf Mhz.\n", sf,(double)freq/1000000);
     printf("------------------\n");
