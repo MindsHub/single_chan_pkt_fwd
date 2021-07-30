@@ -19,7 +19,7 @@
 
 typedef unsigned char byte;
 
-static const int SPI_CHANNEL = 1;
+static const int SPI_CHANNEL = 0;
 static const int SPI_CLOCK_SPEED = 500000; // Hz, from 500,000 to 32,000,000
 
 char message[256];
