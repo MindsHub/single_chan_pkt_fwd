@@ -31,11 +31,8 @@ bool sx1272 = true;
 
 byte receivedbytes;
 
-uint32_t cp_nb_rx_rcv;
-uint32_t cp_nb_rx_ok;
-uint32_t cp_nb_rx_bad;
-uint32_t cp_nb_rx_nocrc;
-uint32_t cp_up_pkt_fwd;
+uint32_t cp_nb_rx_rcv; // # of packets received
+uint32_t cp_nb_rx_ok; // # of packets received correctly
 
 enum sf_t { SF7=7, SF8, SF9, SF10, SF11, SF12 };
 
