@@ -136,10 +136,10 @@ void unselectreceiver() {
 
 byte readRegister(byte addr) {
     unsigned char spibuf[2];
-
-    selectreceiver();
     spibuf[0] = addr & 0x7F;
     spibuf[1] = 0x00;
+
+    selectreceiver();
     wiringPiSPIDataRW(CHANNEL, spibuf, 2);
     unselectreceiver();
 
@@ -148,12 +148,11 @@ byte readRegister(byte addr) {
 
 void writeRegister(byte addr, byte value) {
     unsigned char spibuf[2];
-
     spibuf[0] = addr | 0x80;
     spibuf[1] = value;
+
     selectreceiver();
     wiringPiSPIDataRW(CHANNEL, spibuf, 2);
-
     unselectreceiver();
 }
 
