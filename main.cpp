@@ -17,20 +17,15 @@
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
 
-typedef bool boolean;
 typedef unsigned char byte;
 
 static const int SPI_CHANNEL = 1;
 static const int SPI_CLOCK_SPEED = 500000; // Hz, from 500,000 to 32,000,000
 
-byte currentMode = 0x81;
-
 char message[256];
-char b64[256];
+byte messageLength;
 
 bool sx1272 = true;
-
-byte receivedbytes;
 
 uint32_t cp_nb_rx_rcv; // # of packets received
 uint32_t cp_nb_rx_ok; // # of packets received correctly
@@ -158,7 +153,7 @@ void writeRegister(byte addr, byte value) {
 }
 
 
-boolean receivePkt(char *payload) {
+bool receivePkt(char *payload) {
     // clear rxDone
     writeRegister(REG_IRQ_FLAGS, 0x40);
 
@@ -176,7 +171,7 @@ boolean receivePkt(char *payload) {
 
         byte currentAddr = readRegister(REG_FIFO_RX_CURRENT_ADDR);
         byte receivedCount = readRegister(REG_RX_NB_BYTES);
-        receivedbytes = receivedCount;
+        messageLength = receivedCount;
 
         writeRegister(REG_FIFO_ADDR_PTR, currentAddr);
 
@@ -258,7 +253,7 @@ void receivepacket() {
             char timestamp[24];
             time_t t = time(NULL);
             strftime(timestamp, sizeof timestamp, "%F %T %Z", gmtime(&t));
-            printf("%s (length = %d): %s\n", timestamp, receivedbytes, message + 4);
+            printf("%s (length = %d): %s\n", timestamp, messageLength, message + 4);
             fflush(stdout);
         } // received a message
     } // dio0=1
