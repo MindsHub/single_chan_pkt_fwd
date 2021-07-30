@@ -63,21 +63,15 @@ enum sf_t { SF7=7, SF8, SF9, SF10, SF11, SF12 };
  *******************************************************************************/
 
 // SX1272 - Raspberry connections
-int ssPin = 6;
-int dio0  = 7;
-int RST   = 0;
+const int ssPin = 6;
+const int dio0  = 7;
+const int RST   = 0;
 
 // Set spreading factor (SF7 - SF12)
-sf_t sf = SF7;
+const sf_t sf = SF7;
 
 // Set center frequency
-uint32_t  freq = 868000000; // in Mhz! (868.1)
-
-// define servers
-// TODO: use host names and dns
-//#define SERVER1 "54.72.145.119"    // The Things Network: croft.thethings.girovito.nl
-//#define SERVER2 "192.168.1.10"      // local
-#define PORT 1700                   // The port on which to send data
+const uint32_t freq = 868000000; // in Mhz! (868.1)
 
 // #############################################
 // #############################################
@@ -326,14 +320,6 @@ int main() {
     //cout << "Init result: " << fd << endl;
 
     SetupLoRa();
-
-    if ( (s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-    {
-        die("socket");
-    }
-    memset((char *) &si_other, 0, sizeof(si_other));
-    si_other.sin_family = AF_INET;
-    si_other.sin_port = htons(PORT);
 
     ifr.ifr_addr.sa_family = AF_INET;
     strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);  // can we rely on eth0?
