@@ -198,22 +198,13 @@ bool SetupLoRa() {
         // sx1272
         printf("SX1272 detected, starting.\n");
         sx1272 = true;
+    } else if (version == 0x12) {
+        // sx1276
+        printf("SX1276 detected, starting.\n");
+        sx1272 = false;
     } else {
-        // sx1276?
-        digitalWrite(RST, LOW);
-        delay(100);
-        digitalWrite(RST, HIGH);
-        delay(100);
-        version = readRegister(REG_VERSION);
-        if (version == 0x12) {
-            // sx1276
-            printf("SX1276 detected, starting.\n");
-            sx1272 = false;
-        } else {
-            printf("Unrecognized transceiver.\n");
-            //printf("Version: 0x%x\n",version);
-            return false;
-        }
+        printf("Unrecognized transceiver (version = 0x%x).\n", version);
+        return false;
     }
 
     writeRegister(REG_OPMODE, SX72_MODE_SLEEP);
