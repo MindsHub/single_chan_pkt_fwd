@@ -33,7 +33,7 @@ using namespace std;
 typedef bool boolean;
 typedef unsigned char byte;
 
-static const int CHANNEL = 0;
+static const int CHANNEL = 1;
 
 byte currentMode = 0x81;
 
@@ -71,21 +71,11 @@ int RST   = 0;
 sf_t sf = SF7;
 
 // Set center frequency
-uint32_t  freq = 868100000; // in Mhz! (868.1)
-
-// Set location
-float lat=0.0;
-float lon=0.0;
-int   alt=0;
-
-/* Informal status fields */
-static char platform[24]    = "Single Channel Gateway";  /* platform definition */
-static char email[40]       = "";                        /* used for contact email */
-static char description[64] = "";                        /* used for free form description */
+uint32_t  freq = 868000000; // in Mhz! (868.1)
 
 // define servers
 // TODO: use host names and dns
-#define SERVER1 "54.72.145.119"    // The Things Network: croft.thethings.girovito.nl
+//#define SERVER1 "54.72.145.119"    // The Things Network: croft.thethings.girovito.nl
 //#define SERVER2 "192.168.1.10"      // local
 #define PORT 1700                   // The port on which to send data
 
@@ -313,230 +303,20 @@ void SetupLoRa()
 
 }
 
-void sendudp(char *msg, int length) {
-
-//send the update
-#ifdef SERVER1
-    inet_aton(SERVER1 , &si_other.sin_addr);
-    if (sendto(s, (char *)msg, length, 0 , (struct sockaddr *) &si_other, slen)==-1)
-    {
-        die("sendto()");
-    }
-#endif
-
-#ifdef SERVER2
-    inet_aton(SERVER2 , &si_other.sin_addr);
-    if (sendto(s, (char *)msg, length , 0 , (struct sockaddr *) &si_other, slen)==-1)
-    {
-        die("sendto()");
-    }
-#endif
-}
-
-void sendstat() {
-
-    static char status_report[STATUS_SIZE]; /* status report as a JSON object */
-    char stat_timestamp[24];
-    time_t t;
-
-    int stat_index=0;
-
-    /* pre-fill the data buffer with fixed fields */
-    status_report[0] = PROTOCOL_VERSION;
-    status_report[3] = PKT_PUSH_DATA;
-
-    status_report[4] = (unsigned char)ifr.ifr_hwaddr.sa_data[0];
-    status_report[5] = (unsigned char)ifr.ifr_hwaddr.sa_data[1];
-    status_report[6] = (unsigned char)ifr.ifr_hwaddr.sa_data[2];
-    status_report[7] = 0xFF;
-    status_report[8] = 0xFF;
-    status_report[9] = (unsigned char)ifr.ifr_hwaddr.sa_data[3];
-    status_report[10] = (unsigned char)ifr.ifr_hwaddr.sa_data[4];
-    status_report[11] = (unsigned char)ifr.ifr_hwaddr.sa_data[5];
-
-    /* start composing datagram with the header */
-    uint8_t token_h = (uint8_t)rand(); /* random token */
-    uint8_t token_l = (uint8_t)rand(); /* random token */
-    status_report[1] = token_h;
-    status_report[2] = token_l;
-    stat_index = 12; /* 12-byte header */
-
-    /* get timestamp for statistics */
-    t = time(NULL);
-    strftime(stat_timestamp, sizeof stat_timestamp, "%F %T %Z", gmtime(&t));
-
-    int j = snprintf((char *)(status_report + stat_index), STATUS_SIZE-stat_index, "{\"stat\":{\"time\":\"%s\",\"lati\":%.5f,\"long\":%.5f,\"alti\":%i,\"rxnb\":%u,\"rxok\":%u,\"rxfw\":%u,\"ackr\":%.1f,\"dwnb\":%u,\"txnb\":%u,\"pfrm\":\"%s\",\"mail\":\"%s\",\"desc\":\"%s\"}}", stat_timestamp, lat, lon, (int)alt, cp_nb_rx_rcv, cp_nb_rx_ok, cp_up_pkt_fwd, (float)0, 0, 0,platform,email,description);
-    stat_index += j;
-    status_report[stat_index] = 0; /* add string terminator, for safety */
-
-    printf("stat update: %s\n", (char *)(status_report+12)); /* DEBUG: display JSON stat */
-
-    //send the update
-    sendudp(status_report, stat_index);
-
-}
-
 void receivepacket() {
-
-    long int SNR;
-    int rssicorr;
-
-    if(digitalRead(dio0) == 1)
-    {
+    if (digitalRead(dio0) == 1) {
         if(receivePkt(message)) {
-            byte value = readRegister(REG_PKT_SNR_VALUE);
-            if( value & 0x80 ) // The SNR sign bit is 1
-            {
-                // Invert and divide by 4
-                value = ( ( ~value + 1 ) & 0xFF ) >> 2;
-                SNR = -value;
-            }
-            else
-            {
-                // Divide by 4
-                SNR = ( value & 0xFF ) >> 2;
-            }
-            
-            if (sx1272) {
-                rssicorr = 139;
-            } else {
-                rssicorr = 157;
-            }
-
-            printf("Packet RSSI: %d, ",readRegister(0x1A)-rssicorr);
-            printf("RSSI: %d, ",readRegister(0x1B)-rssicorr);
-            printf("SNR: %li, ",SNR);
-            printf("Length: %i",(int)receivedbytes);
-            printf("\n");
-
-            int j;
-            j = bin_to_b64((uint8_t *)message, receivedbytes, (char *)(b64), 341);
-            //fwrite(b64, sizeof(char), j, stdout);
-
-            char buff_up[TX_BUFF_SIZE]; /* buffer to compose the upstream packet */
-            int buff_index=0;
-
-            /* gateway <-> MAC protocol variables */
-            //static uint32_t net_mac_h; /* Most Significant Nibble, network order */
-            //static uint32_t net_mac_l; /* Least Significant Nibble, network order */
-
-            /* pre-fill the data buffer with fixed fields */
-            buff_up[0] = PROTOCOL_VERSION;
-            buff_up[3] = PKT_PUSH_DATA;
-
-            /* process some of the configuration variables */
-            //net_mac_h = htonl((uint32_t)(0xFFFFFFFF & (lgwm>>32)));
-            //net_mac_l = htonl((uint32_t)(0xFFFFFFFF &  lgwm  ));
-            //*(uint32_t *)(buff_up + 4) = net_mac_h;
-            //*(uint32_t *)(buff_up + 8) = net_mac_l;
-
-            buff_up[4] = (unsigned char)ifr.ifr_hwaddr.sa_data[0];
-            buff_up[5] = (unsigned char)ifr.ifr_hwaddr.sa_data[1];
-            buff_up[6] = (unsigned char)ifr.ifr_hwaddr.sa_data[2];
-            buff_up[7] = 0xFF;
-            buff_up[8] = 0xFF;
-            buff_up[9] = (unsigned char)ifr.ifr_hwaddr.sa_data[3];
-            buff_up[10] = (unsigned char)ifr.ifr_hwaddr.sa_data[4];
-            buff_up[11] = (unsigned char)ifr.ifr_hwaddr.sa_data[5];
-
-            /* start composing datagram with the header */
-            uint8_t token_h = (uint8_t)rand(); /* random token */
-            uint8_t token_l = (uint8_t)rand(); /* random token */
-            buff_up[1] = token_h;
-            buff_up[2] = token_l;
-            buff_index = 12; /* 12-byte header */
-
-            // TODO: tmst can jump is time is (re)set, not good.
-            struct timeval now;
-            gettimeofday(&now, NULL);
-            uint32_t tmst = (uint32_t)(now.tv_sec*1000000 + now.tv_usec);
-
-            /* start of JSON structure */
-            memcpy((void *)(buff_up + buff_index), (void *)"{\"rxpk\":[", 9);
-            buff_index += 9;
-            buff_up[buff_index] = '{';
-            ++buff_index;
-            j = snprintf((char *)(buff_up + buff_index), TX_BUFF_SIZE-buff_index, "\"tmst\":%u", tmst);
-            buff_index += j;
-            j = snprintf((char *)(buff_up + buff_index), TX_BUFF_SIZE-buff_index, ",\"chan\":%1u,\"rfch\":%1u,\"freq\":%.6lf", 0, 0, (double)freq/1000000);
-            buff_index += j;
-            memcpy((void *)(buff_up + buff_index), (void *)",\"stat\":1", 9);
-            buff_index += 9;
-            memcpy((void *)(buff_up + buff_index), (void *)",\"modu\":\"LORA\"", 14);
-            buff_index += 14;
-            /* Lora datarate & bandwidth, 16-19 useful chars */
-            switch (sf) {
-            case SF7:
-                memcpy((void *)(buff_up + buff_index), (void *)",\"datr\":\"SF7", 12);
-                buff_index += 12;
-                break;
-            case SF8:
-                memcpy((void *)(buff_up + buff_index), (void *)",\"datr\":\"SF8", 12);
-                buff_index += 12;
-                break;
-            case SF9:
-                memcpy((void *)(buff_up + buff_index), (void *)",\"datr\":\"SF9", 12);
-                buff_index += 12;
-                break;
-            case SF10:
-                memcpy((void *)(buff_up + buff_index), (void *)",\"datr\":\"SF10", 13);
-                buff_index += 13;
-                break;
-            case SF11:
-                memcpy((void *)(buff_up + buff_index), (void *)",\"datr\":\"SF11", 13);
-                buff_index += 13;
-                break;
-            case SF12:
-                memcpy((void *)(buff_up + buff_index), (void *)",\"datr\":\"SF12", 13);
-                buff_index += 13;
-                break;
-            default:
-                memcpy((void *)(buff_up + buff_index), (void *)",\"datr\":\"SF?", 12);
-                buff_index += 12;
-            }
-            memcpy((void *)(buff_up + buff_index), (void *)"BW125\"", 6);
-            buff_index += 6;
-            memcpy((void *)(buff_up + buff_index), (void *)",\"codr\":\"4/5\"", 13);
-            buff_index += 13;
-            j = snprintf((char *)(buff_up + buff_index), TX_BUFF_SIZE-buff_index, ",\"lsnr\":%li", SNR);
-            buff_index += j;
-            j = snprintf((char *)(buff_up + buff_index), TX_BUFF_SIZE-buff_index, ",\"rssi\":%d,\"size\":%u", readRegister(0x1A)-rssicorr, receivedbytes);
-            buff_index += j;
-            memcpy((void *)(buff_up + buff_index), (void *)",\"data\":\"", 9);
-            buff_index += 9;
-            j = bin_to_b64((uint8_t *)message, receivedbytes, (char *)(buff_up + buff_index), 341);
-            buff_index += j;
-            buff_up[buff_index] = '"';
-            ++buff_index;
-
-            /* End of packet serialization */
-            buff_up[buff_index] = '}';
-            ++buff_index;
-            buff_up[buff_index] = ']';
-            ++buff_index;
-            /* end of JSON datagram payload */
-            buff_up[buff_index] = '}';
-            ++buff_index;
-            buff_up[buff_index] = 0; /* add string terminator, for safety */
-
-            printf("rxpk update: %s\n", (char *)(buff_up + 12)); /* DEBUG: display JSON payload */
-
-            //send the messages
-            sendudp(buff_up, buff_index);
-
+            char timestamp[24];
+            time_t t = time(NULL);
+            strftime(timestamp, sizeof timestamp, "%F %T %Z", gmtime(&t));
+            printf("%s (length = %d): %s\n", timestamp, receivedbytes, message + 4);
             fflush(stdout);
-
         } // received a message
-
     } // dio0=1
 }
 
-int main () {
-
-    struct timeval nowtime;
-    uint32_t lasttime;
-
-    wiringPiSetup () ;
+int main() {
+    wiringPiSetup();
     pinMode(ssPin, OUTPUT);
     pinMode(dio0, INPUT);
     pinMode(RST, OUTPUT);
@@ -572,22 +352,8 @@ int main () {
     printf("------------------\n");
 
     while(1) {
-
         receivepacket();
-
-        gettimeofday(&nowtime, NULL);
-        uint32_t nowseconds = (uint32_t)(nowtime.tv_sec);
-        if (nowseconds - lasttime >= 30) {
-            lasttime = nowseconds;
-            sendstat();
-            cp_nb_rx_rcv = 0;
-            cp_nb_rx_ok = 0;
-            cp_up_pkt_fwd = 0;
-        }
         delay(1);
     }
-
-    return (0);
-
 }
 
