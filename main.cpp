@@ -318,6 +318,7 @@ void receivepacket() {
             printf("SNR: %li, ",SNR);
             printf("Length: %i",(int)receivedbytes);
             printf("\nData: %s\n", message+4);
+            fflush(stdout);
 
         } // received a message
 
@@ -348,6 +349,8 @@ int main () {
 
     printf("Listening at SF%i on %.6lf Mhz.\n", sf,(double)freq/1000000);
     printf("------------------\n");
+    fflush(stdout);
+
 
     while(1) {
         receivepacket();
