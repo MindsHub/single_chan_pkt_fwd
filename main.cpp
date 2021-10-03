@@ -253,7 +253,7 @@ void receivepacket() {
             char timestamp[24];
             time_t t = time(NULL);
             strftime(timestamp, sizeof timestamp, "%F %T %Z", gmtime(&t));
-            printf("%s (length = %d):\n%s\n", timestamp, messageLength, message + 4);
+            printf("%s (length = %d):\n    %s\n", timestamp, messageLength, message + 4);
             fflush(stdout);
         } // received a message
     } // dio0=1
