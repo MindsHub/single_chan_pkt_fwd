@@ -253,7 +253,7 @@ void receivepacket() {
             char timestamp[24];
             time_t t = time(NULL);
             strftime(timestamp, sizeof timestamp, "%F %T %Z", gmtime(&t));
-            printf("%s (length = %d): %s\n", timestamp, messageLength, message + 4);
+            printf("%s (length = %d):\n%s\n", timestamp, messageLength, message + 4);
             fflush(stdout);
         } // received a message
     } // dio0=1
@@ -265,16 +265,18 @@ int main() {
     pinMode(dio0, INPUT);
     pinMode(RST, OUTPUT);
 
-    //int fd = 
-    wiringPiSPISetup(SPI_CHANNEL, SPI_CLOCK_SPEED);
-    //cout << "Init result: " << fd << endl;
+    int fd = wiringPiSPISetup(SPI_CHANNEL, SPI_CLOCK_SPEED);
+    if (fd < 0) {
+        return 1;
+    }
 
     if (!SetupLoRa()) {
-        return 1;
+        return 2;
     }
 
     printf("Listening at SF%i on %.6lf Mhz.\n", sf, freq / 1000000.0);
     printf("------------------\n");
+    fflush(stdout);
 
     while(1) {
         receivepacket();
