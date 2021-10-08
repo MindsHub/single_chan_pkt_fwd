@@ -1,19 +1,31 @@
 import io
 import subprocess
 import requests
+import os
+import sys
+import traceback
 
 IP = "192.168.1.101"
 PORT = 8000
+EXECUTABLE = os.path.dirname(os.path.abspath(__file__)) + "/single_chan_pkt_fwd"
 
 def handleLine(line):
-    print(line, end="", flush=True)
-    line = line.strip()
-    if len(line) > 0 and line[0] == "{":
-        requests.post(f"http://{IP}:{PORT}/soil_data_received_from_sensor", line)
+    try:
+        print(line, end="", flush=True)
+        line = line.strip()
+        print(" ->", line, end="", flush=True)
+        if len(line) > 0 and line[0] == ord(b"{"):
+            print(" -> sending", end="", flush=True)
+            requests.post(f"http://{IP}:{PORT}/soil_data_received_from_sensor", line)
+        print(flush=True)
+    except:
+        print("Error", sys.stderr)
+        traceback.print_exc()
 
 def runLoraListener():
-    proc = subprocess.Popen(["./single_chan_pkt_fwd"], stdout=subprocess.PIPE)
-    for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
+    proc = subprocess.Popen([EXECUTABLE], stdout=subprocess.PIPE)
+    while True:
+        line = proc.stdout.readline()
         handleLine(line)
 
 def debugHandleLine(line):
