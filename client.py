@@ -16,7 +16,7 @@ def handleLine(line):
         print(" ->", line, end="", flush=True)
         if len(line) > 0 and line[0] == ord(b"{"):
             print(" -> sending", end="", flush=True)
-            requests.post(f"http://{IP}:{PORT}/soil_data_received_from_sensor", line)
+            requests.post(f"http://{IP}:{PORT}/soil_data_received_from_sensor", line, timeout=3)
         print(flush=True)
     except:
         print("Error", sys.stderr)
