@@ -28,12 +28,12 @@ def runLoraListener():
         line = proc.stdout.readline()
         handleLine(line)
 
-def debugHandleLine(line):
-    handleLine('Hello') # does nothing
-    handleLine('    {"I": 0, "H": 64.4, "T": 21.6, "M": 1024}\n') # tl 0%
-    handleLine('    {"I": 1, "H": 64.4, "T": 21.6, "M": 800}\n')  # tr 40%
-    handleLine('    {"I": 2, "H": 64.4, "T": 21.6, "M": 700}\n')  # br 60%
-    handleLine('    {"I": 3, "H": 64.4, "T": 21.6, "M": 300}\n')  # bl 100%
+def debugHandleLine():
+    handleLine(b'Hello') # does nothing
+    handleLine(b'    {"I": 0, "H": 64.4, "T": 21.6, "M": 721}\n') # tl 0%
+    handleLine(b'    {"I": 1, "H": 64.4, "T": 21.6, "M": 743}\n')  # tr 40%
+    handleLine(b'    {"I": 2, "H": 64.4, "T": 21.6, "M": 808}\n')  # br 60%
+    handleLine(b'    {"I": 3, "H": 64.4, "T": 21.6, "M": 699}\n')  # bl 100%
 
 if __name__ == "__main__":
     runLoraListener()
